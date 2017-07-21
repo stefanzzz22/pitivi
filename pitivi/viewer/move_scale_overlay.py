@@ -331,10 +331,15 @@ class MoveScaleOverlay(Overlay):
     def __get_source_property(self, prop):
         if self.__source_property_keyframed(prop):
             binding = self._source.get_control_binding(prop)
-            res, timestamp = self.__get_pipeline_position()
+            res, position = self.__get_pipeline_position()
             if res:
-                source_timestamp = timestamp - self._source.props.start + self._source.props.in_point
-                value = binding.get_value(source_timestamp)
+                start = self._source.props.start
+                in_point = self._source.props.in_point
+                duration = self._source.props.duration
+                # If the position is outside of the clip, take the property
+                # value at the start/end (whichever is closer) of the clip.
+                source_position = max(0, min(position - start, duration - 1)) + in_point
+                value = binding.get_value(source_position)
                 res = value is not None
                 return res, value
 

@@ -720,7 +720,13 @@ class TransformationProperties(Gtk.Expander, Loggable):
         if self.__source_uses_keyframes():
             try:
                 position = self._project.pipeline.getPosition()
-                source_position = position - self.source.props.start + self.source.props.in_point
+                start = self.source.props.start
+                in_point = self.source.props.in_point
+                duration = self.source.props.duration
+
+                # If the position is outside of the clip, take the property
+                # value at the start/end (whichever is closer) of the clip.
+                source_position = max(0, min(position - start, duration - 1)) + in_point
                 value = self.__control_bindings[prop].get_value(source_position)
                 res = value is not None
                 return res, value
