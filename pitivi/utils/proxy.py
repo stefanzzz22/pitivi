@@ -88,15 +88,21 @@ class ProxyManager(GObject.Object, Loggable):
     }
 
     WHITELIST_FORMATS = []
+    WHITELIST_AUDIO_FORMATS = ["audio/mpeg", "audio/x-vorbis",
+                               "audio/x-raw", "audio/x-flac"]
+
     for container in ["video/quicktime", "application/ogg",
                       "video/x-matroska", "video/webm"]:
-        for audio in ["audio/mpeg", "audio/x-vorbis",
-                      "audio/x-raw", "audio/x-flac"]:
+        for audio in WHITELIST_AUDIO_FORMATS:
             for video in ["video/x-h264", "image/jpeg",
                           "video/x-raw", "video/x-vp8",
                           "video/x-theora"]:
                 WHITELIST_FORMATS.append(createEncodingProfileSimple(
                     container, audio, video))
+
+    for audio in WHITELIST_AUDIO_FORMATS:
+        a = GstPbutils.EncodingAudioProfile.new(Gst.Caps(audio), None, None, 0)
+        WHITELIST_FORMATS.append(a)
 
     proxy_extension = "proxy.mkv"
 
@@ -133,6 +139,16 @@ class ProxyManager(GObject.Object, Loggable):
             return not info.get_caps().intersect(profile.get_format()).is_empty()
 
         info = asset.get_info()
+        if isinstance(encoding_profile, GstPbutils.EncodingAudioProfile):
+            if isinstance(info.get_stream_info(), GstPbutils.DiscovererContainerInfo):
+                return False
+            audios = info.get_audio_streams()
+            if len(audios) != 1 or not capsMatch(audios[0], encoding_profile):
+                return False
+            if info.get_video_streams():
+                return False
+            return True
+
         container = info.get_stream_info()
         if container:
             if not capsMatch(container, encoding_profile):
