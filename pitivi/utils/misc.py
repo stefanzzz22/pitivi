@@ -99,6 +99,23 @@ def get_proxy_target(obj):
 
 # ------------------------------ URI helpers --------------------------------
 
+def is_valid_file(path):
+    """Returns whether a path is or can be a regular file."""
+    if os.path.isfile(path):
+        return True
+    if os.path.exists(path):
+        # The path is not a regular file
+        return False
+
+    try:
+        # The path doesn't exist, so open(path, "w") is safe to use.
+        open(path, "w").close()
+        os.unlink(path)
+        return True
+    except IOError:
+        return False
+
+
 def isWritable(path):
     """Returns whether the file/path is writable."""
     try:
